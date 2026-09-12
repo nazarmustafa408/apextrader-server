@@ -1,0 +1,172 @@
+ <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الدردشة الحية - ApexTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#060810;padding:15px;color:#e8edf7;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.chat-box{width:100%;max-width:500px;height:700px;background:#0a0e1a;border-radius:20px;border:1px solid #1a2138;box-shadow:0 20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.chat-header{background:linear-gradient(90deg,#141a2e,#1a2138);padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #232b45}
+.chat-avatar{width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative}
+.online-dot{position:absolute;bottom:-2px;left:-2px;width:14px;height:14px;background:#10b981;border:3px solid #141a2e;border-radius:50%}
+.chat-header-info h1{font-size:15px;color:#fff;font-weight:900}
+.chat-header-info p{font-size:11px;color:#10b981}
+.start-form{padding:30px 20px;display:flex;flex-direction:column;justify-content:center;flex:1}
+.start-form h2{font-size:20px;color:#fff;text-align:center;margin-bottom:8px;font-weight:900}
+.start-form p{font-size:13px;color:#8892b0;text-align:center;margin-bottom:25px}
+.start-form input{width:100%;padding:14px;background:#141a2e;border:2px solid #232b45;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;margin-bottom:12px;box-sizing:border-box}
+.start-form input:focus{outline:none;border-color:#3b82f6}
+.start-form button{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#3b82f6);border:none;border-radius:14px;color:#fff;font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 15px 35px rgba(16,185,129,.3)}
+.start-form button:hover{transform:translateY(-2px)}
+.messages{flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.messages::-webkit-scrollbar{width:5px}
+.messages::-webkit-scrollbar-thumb{background:#232b45;border-radius:10px}
+.msg{max-width:80%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.6;animation:msgIn .3s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-start;background:#141a2e;border:1px solid #232b45;color:#fff;border-bottom-left-radius:4px}
+.msg.admin{align-self:flex-end;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-bottom-right-radius:4px}
+.msg .time{font-size:10px;color:rgba(255,255,255,.6);margin-top:5px}
+.msg.system{align-self:center;background:rgba(59,130,246,.1);border:1px solid #3b82f6;color:#3b82f6;font-size:11px;padding:8px 14px;border-radius:20px;text-align:center;max-width:90%}
+.chat-input{padding:15px;background:#141a2e;border-top:1px solid #232b45;display:flex;gap:10px;align-items:flex-end}
+.chat-input textarea{flex:1;padding:12px;background:#0a0e1a;border:1px solid #232b45;border-radius:12px;color:#fff;font-family:inherit;font-size:13px;resize:none;min-height:45px;max-height:120px;box-sizing:border-box}
+.chat-input textarea:focus{outline:none;border-color:#3b82f6}
+.chat-input button{width:48px;height:48px;background:linear-gradient(135deg,#10b981,#3b82f6);border:none;border-radius:12px;color:#fff;font-size:20px;cursor:pointer;flex-shrink:0}
+.chat-input button:hover{transform:scale(1.05)}
+.back-link{text-align:center;padding:10px;background:#0a0e1a;color:#8892b0;font-size:11px;border-top:1px solid #232b45}
+.back-link a{color:#3b82f6;text-decoration:none;font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="chat-box">
+<div class="chat-header">
+<div class="chat-avatar">
+⚡
+<span class="online-dot"></span>
+</div>
+<div class="chat-header-info">
+<h1>ApexTrader Support</h1>
+<p>🟢 متصل الآن</p>
+</div>
+</div>
+[9/12/2026 10:43 PM] mustafa: <div class="start-form" id="startForm">
+<h2>💬 دردشة مباشرة</h2>
+<p>تحدث معنا مباشرة - رد فوري</p>
+<input type="text" id="userName" placeholder="اسمك" />
+<input type="email" id="userEmail" placeholder="بريدك الإلكتروني" />
+<input type="text" id="firstMessage" placeholder="كيف يمكننا مساعدتك؟" />
+<button onclick="startChat()">🚀 ابدأ المحادثة</button>
+</div>
+
+<div class="messages" id="messages" style="display:none"></div>
+<div class="chat-input" id="chatInput" style="display:none">
+<textarea id="messageInput" placeholder="اكتب رسالتك هنا..." rows="1"></textarea>
+<button onclick="sendMessage()">📤</button>
+</div>
+
+<div class="back-link">
+<a href="/">← العودة للرئيسية</a>
+</div>
+</div>
+
+<script>
+let chatId=null;
+let userName='';
+let ws=null;
+
+async function startChat(){
+const name=document.getElementById('userName').value.trim();
+const email=document.getElementById('userEmail').value.trim();
+const message=document.getElementById('firstMessage').value.trim();
+if(!name||!email)return alert('الرجاء إدخال الاسم والبريد');
+userName=name;
+const res=await fetch('/api/chat/start',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({name,email,message})
+});
+const data=await res.json();
+if(data.success){
+chatId=data.chatId;
+localStorage.setItem('chatId',chatId);
+localStorage.setItem('userName',name);
+document.getElementById('startForm').style.display='none';
+document.getElementById('messages').style.display='flex';
+document.getElementById('chatInput').style.display='flex';
+if(message)addMessage('user',message);
+connectWS();
+loadMessages();
+}
+}
+
+function addMessage(sender,text,time){
+const messages=document.getElementById('messages');
+const msg=document.createElement('div');
+msg.className='msg '+sender;
+const t=time?new Date(time).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+msg.innerHTML=text+<div class="time">${t}</div>;
+messages.appendChild(msg);
+messages.scrollTop=messages.scrollHeight;
+}
+
+async function sendMessage(){
+const input=document.getElementById('messageInput');
+const text=input.value.trim();
+if(!text||!chatId)return;
+await fetch('/api/chat/send',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({chatId,message:text})
+});
+addMessage('user',text);
+input.value='';
+input.style.height='45px';
+}
+
+async function loadMessages(){
+if(!chatId)return;
+const res=await fetch('/api/chat/'+chatId);
+const data=await res.json();
+const messages=document.getElementById('messages');
+messages.innerHTML='';
+data.messages.forEach(m=>{addMessage(m.sender,m.text,m.time);});
+}
+
+function connectWS(){
+const protocol=location.protocol==='https:'?'wss:':'ws:';
+ws=new WebSocket(protocol+'//'+location.host);
+ws.onmessage=(e)=>{
+try{
+const msg=JSON.parse(e.data);
+if(msg.type==='chat_message'&&msg.chatId===chatId){
+if(msg.message.sender==='admin'){addMessage('admin',msg.message.text,msg.message.time);}
+}
+}catch(err){}
+};
+ws.onclose=()=>setTimeout(connectWS,3000);
+}
+
+document.getElementById('messageInput').addEventListener('input',function(){
+this.style.height='45px';
+this.style.height=Math.min(this.scrollHeight,120)+'px';
+});
+
+document.getElementById('messageInput').addEventListener('keypress',(e)=>{
+if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+
+const savedChatId=localStorage.getItem('chatId');
+if(savedChatId){
+chatId=savedChatId;
+document.getElementById('startForm').style.display='none';
+document.getElementById('messages').style.display='flex';
+document.getElementById('chatInput').style.display='flex';
+connectWS();
+loadMessages();
+}
+</script>
+</body>
+</html>
