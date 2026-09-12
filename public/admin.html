@@ -1,0 +1,371 @@
+ <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الإدارة - ApexTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#060810;padding:15px;color:#e8edf7;min-height:100vh}
+.wrap{max-width:900px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#141a2e,#1a2138);padding:16px 20px;border-radius:14px;margin-bottom:16px;border:1px solid #232b45}
+.header h1{font-size:18px;color:#fff;font-weight:900}
+.header p{font-size:11px;color:#8892b0}
+.badge{padding:6px 14px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:20px;font-size:11px;font-weight:800}
+.tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:5px}
+.tab{padding:10px 20px;background:#141a2e;border:1px solid #232b45;border-radius:12px;color:#8892b0;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.3s}
+.tab:hover{background:#1a2138;color:#fff}
+.tab.active{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-color:transparent}
+.panel{display:none}
+.panel.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:#141a2e;border:1px solid #232b45;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;background:var(--c)}
+.stat .lbl{font-size:11px;color:#8892b0;margin-bottom:6px}
+.stat .val{font-size:22px;font-weight:900;color:var(--c)}
+.stat .sub{font-size:10px;color:#8892b0;margin-top:3px}
+.section{background:#141a2e;border:1px solid #232b45;border-radius:14px;padding:18px;margin-bottom:16px}
+.section h2{font-size:14px;color:#fff;margin-bottom:14px;font-weight:900;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:18px;background:linear-gradient(180deg,#3b82f6,#8b5cf6);border-radius:10px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:#8892b0;margin-bottom:6px;font-weight:700}
+.field input,.field select{width:100%;padding:12px;background:#0a0e1a;border:1px solid #232b45;border-radius:10px;color:#fff;font-family:inherit;font-size:13px;box-sizing:border-box}
+.field input:focus,.field select:focus{outline:none;border-color:#3b82f6}
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#10b981,#3b82f6);border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer}
+.btn-primary:hover{transform:translateY(-2px)}
+.key-box{display:none;background:rgba(16,185,129,.1);border:2px solid #10b981;border-radius:12px;padding:15px;margin-top:12px;text-align:center}
+.key-box h3{color:#10b981;font-size:14px;margin-bottom:8px}
+.key-box code{display:block;background:#0a0e1a;padding:12px;border-radius:8px;color:#10b981;font-size:16px;font-weight:900;margin:8px 0;letter-spacing:2px;font-family:monospace}
+.key-box p{font-size:12px;color:#8892b0;margin-top:8px}
+table{width:100%;border-collapse:collapse}
+th{background:#1a2138;padding:10px;font-size:11px;color:#8892b0;text-align:right;font-weight:700;border-bottom:1px solid #232b45}
+td{padding:10px;font-size:12px;border-bottom:1px solid #232b45;color:#e8edf7}
+tr:last-child td{border-bottom:none}
+.status{display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:800}
+.status.active{background:rgba(16,185,129,.15);color:#10b981}
+.status.pending{background:rgba(245,158,11,.15);color:#f59e0b}
+.status.expired{background:rgba(239,68,68,.15);color:#ef4444}
+[9/12/2026 10:30 PM] mustafa: .status.banned{background:rgba(239,68,68,.3);color:#ef4444}
+.action-btn{padding:4px 10px;border:none;border-radius:6px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;margin-left:3px}
+.btn-ban{background:rgba(239,68,68,.15);color:#ef4444}
+.btn-extend{background:rgba(16,185,129,.15);color:#10b981}
+.btn-copy{background:rgba(59,130,246,.15);color:#3b82f6}
+.admin-input{background:#0a0e1a;border:2px solid #232b45;border-radius:10px;padding:12px;color:#fff;font-family:inherit;width:100%;margin-bottom:12px;box-sizing:border-box}
+.alert{background:rgba(16,185,129,.1);border:1px solid #10b981;border-radius:10px;padding:12px;color:#10b981;font-size:12px;margin-bottom:12px;display:none}
+.plan-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:12px;background:#1a2138;border-radius:10px;margin-bottom:8px}
+@media(max-width:600px){.plan-row{grid-template-columns:1fr 1fr;gap:8px}}
+.plan-row input{padding:8px;background:#0a0e1a;border:1px solid #232b45;border-radius:8px;color:#fff;font-family:inherit;font-size:12px;width:100%;box-sizing:border-box}
+.plan-row .toggle{width:40px;height:22px;background:#232b45;border-radius:11px;position:relative;cursor:pointer;transition:.3s}
+.plan-row .toggle.on{background:#10b981}
+.plan-row .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.3s}
+.plan-row .toggle.on::after{left:20px}
+.chat-link{display:block;text-decoration:none;color:#fff;text-align:center;padding:15px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:14px;margin-bottom:16px;font-weight:900;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+<div>
+<h1>👑 لوحة إدارة ApexTrader</h1>
+<p>إدارة كاملة من صفحة واحدة</p>
+</div>
+<div class="badge">مدير</div>
+</div>
+
+<div id="loginBox" class="section">
+<h2>🔐 تسجيل دخول المدير</h2>
+<input type="password" class="admin-input" id="adminKey" placeholder="أدخل مفتاح المدير" />
+<button class="btn-primary" onclick="login()">دخول</button>
+<p style="font-size:11px;color:#8892b0;text-align:center;margin-top:10px">المفتاح الافتراضي: <b>apextrader_admin_2025</b></p>
+</div>
+
+<div id="adminPanel" style="display:none">
+
+<div class="alert" id="alertBox"></div>
+
+<div class="tabs">
+<button class="tab active" onclick="showTab('overview',event)">📊 نظرة عامة</button>
+<button class="tab" onclick="showTab('keys',event)">🎫 المفاتيح</button>
+<button class="tab" onclick="showTab('orders',event)">📋 الطلبات</button>
+<button class="tab" onclick="showTab('settings',event)">⚙️ الإعدادات</button>
+</div>
+
+<div class="panel active" id="tab-overview">
+<div class="stats" id="stats"></div>
+<a href="/admin-chats" class="chat-link">💬 إدارة الدردشات الحية</a>
+</div>
+
+<div class="panel" id="tab-keys">
+<div class="section">
+<h2>🎫 توليد مفتاح اشتراك</h2>
+<div class="field">
+<label>الخطة</label>
+<select id="genPlan"></select>
+</div>
+<div class="field">
+<label>اسم العميل (اختياري)</label>
+<input type="text" id="genName" placeholder="اسم العميل" />
+</div>
+<button class="btn-primary" onclick="generateKey()">🎫 توليد مفتاح جديد</button>
+<div class="key-box" id="keyBox">
+<h3>✅ تم توليد المفتاح</h3>
+<code id="newKey"></code>
+<p>الخطة: <b id="newPlan"></b></p>
+<p>ينتهي: <b id="newExpiry"></b></p>
+<button class="btn-primary" onclick="copyKey()" style="margin-top:10px">📋 نسخ المفتاح</button>
+</div>
+</div>
+
+<div class="section">
+<h2>📋 كل المفاتيح</h2>
+<div id="licensesList"></div>
+</div>
+</div>
+
+<div class="panel" id="tab-orders">
+<div class="section">
+<h2>📋 طلبات الاشتراك</h2>
+<div id="ordersList"></div>
+</div>
+</div>
+
+<div class="panel" id="tab-settings">
+<div class="section">
+<h2>💰 أرقام الدفع</h2>
+<div class="field">
+<label>📱 رقم زين كاش</label>
+<input type="text" id="setZaincash" placeholder="0781 278 7307" />
+[9/12/2026 10:30 PM] mustafa: </div>
+<div class="field">
+<label>💳 رقم الماستر كارد</label>
+<input type="text" id="setMastercard" placeholder="7110 591 729" />
+</div>
+<div class="field">
+<label>📞 رقم واتساب</label>
+<input type="text" id="setWhatsapp" placeholder="+964 781 278 7307" />
+</div>
+</div>
+
+<div class="section">
+<h2>💵 الخطط والأسعار</h2>
+<div id="plansEditor"></div>
+</div>
+
+<div class="section">
+<h2>🔐 كلمة مرور المدير</h2>
+<div class="field">
+<label>كلمة مرور جديدة</label>
+<input type="password" id="setNewAdminKey" placeholder="اتركه فارغاً لعدم التغيير" />
+</div>
+</div>
+
+<button class="btn-primary" onclick="saveSettings()">💾 حفظ كل الإعدادات</button>
+</div>
+
+</div>
+</div>
+
+<script>
+let adminKey=sessionStorage.getItem('adminKey')||'';
+let settings={};
+
+async function login(){
+const key=document.getElementById('adminKey').value;
+if(!key)return alert('أدخل المفتاح');
+adminKey=key;
+sessionStorage.setItem('adminKey',key);
+const res=await fetch('/api/admin/stats?key='+key);
+if(res.ok){
+document.getElementById('loginBox').style.display='none';
+document.getElementById('adminPanel').style.display='block';
+loadAll();
+}else{
+alert('مفتاح خاطئ');
+sessionStorage.removeItem('adminKey');
+}
+}
+
+function showTab(name,ev){
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+if(ev&&ev.target){ev.target.classList.add('active');}
+document.getElementById('tab-'+name).classList.add('active');
+}
+
+function showAlert(msg,color='#10b981'){
+const box=document.getElementById('alertBox');
+box.textContent=msg;
+box.style.color=color;
+box.style.borderColor=color;
+box.style.display='block';
+setTimeout(()=>box.style.display='none',3000);
+}
+
+async function loadAll(){
+await Promise.all([loadStats(),loadOrders(),loadLicenses(),loadSettings()]);
+}
+
+async function loadStats(){
+const stats=await fetch('/api/admin/stats').then(r=>r.json());
+document.getElementById('stats').innerHTML=
+<div class="stat" style="--c:#10b981"><div class="lbl">المفاتيح النشطة</div><div class="val">${stats.activeLicenses}</div><div class="sub">نشط</div></div>
+<div class="stat" style="--c:#f59e0b"><div class="lbl">طلبات معلقة</div><div class="val">${stats.pendingOrders}</div><div class="sub">بانتظار</div></div>
+<div class="stat" style="--c:#3b82f6"><div class="lbl">إجمالي المفاتيح</div><div class="val">${stats.totalLicenses}</div><div class="sub">الكل</div></div>
+<div class="stat" style="--c:#8b5cf6"><div class="lbl">الإيرادات</div><div class="val">${stats.totalRevenueFormatted}</div><div class="sub">دينار</div></div>
+;
+}
+
+async function loadSettings(){
+const res=await fetch('/api/admin/settings?adminKey='+adminKey);
+if(!res.ok)return;
+settings=await res.json();
+document.getElementById('setZaincash').value=settings.zaincash||'';
+document.getElementById('setMastercard').value=settings.mastercard||'';
+document.getElementById('setWhatsapp').value=settings.whatsapp||'';
+document.getElementById('plansEditor').innerHTML=Object.entries(settings.plans).map(([key,p])=>
+<div class="plan-row">
+<input type="text" value="${p.nameAr}" onchange="updatePlan('${key}','nameAr',this.value)" placeholder="الاسم" />
+<input type="number" value="${p.price}" onchange="updatePlan('${key}','price',parseInt(this.value))" placeholder="السعر" />
+<input type="number" value="${p.days}" onchange="updatePlan('${key}','days',parseInt(this.value))" placeholder="أيام" />
+<input type="number" value="${p.maxAccounts}" onchange="updatePlan('${key}','maxAccounts',parseInt(this.value))" placeholder="حسابات" />
+<div class="toggle ${p.enabled?'on':''}" onclick="togglePlan('${key}',this)"></div>
+</div>
+).join('');
+document.getElementById('genPlan').innerHTML=Object.entries(settings.plans).map(([key,p])=>
+<option value="${key}">${p.nameAr} - ${p.price.toLocaleString()} د.ع</option>
+).join('');
+}
+
+function updatePlan(key,field,value){settings.plans[key][field]=value;}
+function togglePlan(key,el){settings.plans[key].enabled=!settings.plans[key].enabled;el.classList.toggle('on');}
+[9/12/2026 10:30 PM] mustafa: async function saveSettings(){
+const zaincash=document.getElementById('setZaincash').value;
+const mastercard=document.getElementById('setMastercard').value;
+const whatsapp=document.getElementById('setWhatsapp').value;
+const newAdminKey=document.getElementById('setNewAdminKey').value;
+const res=await fetch('/api/admin/settings/update',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({adminKey,zaincash,mastercard,whatsapp,plans:settings.plans,newAdminKey:newAdminKey||undefined})
+});
+const data=await res.json();
+if(data.success){
+showAlert('✅ تم حفظ الإعدادات بنجاح');
+if(newAdminKey){adminKey=newAdminKey;sessionStorage.setItem('adminKey',newAdminKey);}
+}else{
+showAlert('❌ فشل الحفظ','#ef4444');
+}
+}
+
+async function loadOrders(){
+const orders=await fetch('/api/admin/orders').then(r=>r.json());
+const list=document.getElementById('ordersList');
+if(orders.length===0){list.innerHTML='<p style="color:#8892b0;text-align:center;padding:20px">لا توجد طلبات</p>';return;}
+list.innerHTML=<table><thead><tr><th>الطلب</th><th>العميل</th><th>الخطة</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+${orders.map(o=>
+<tr>
+<td><code style="font-size:10px;color:#3b82f6">${o.id}</code></td>
+<td>${o.name}</td>
+<td>${o.planName}</td>
+<td>${o.amount.toLocaleString()}</td>
+<td><span class="status ${o.status}">${o.status}</span></td>
+<td>${o.status==='pending'?<button class="action-btn btn-extend" onclick="activateOrder('${o.id}')">✅ تفعيل</button>:''}</td>
+</tr>
+).join('')}
+</tbody></table>;
+}
+
+async function loadLicenses(){
+const licenses=await fetch('/api/admin/licenses').then(r=>r.json());
+const list=document.getElementById('licensesList');
+if(licenses.length===0){list.innerHTML='<p style="color:#8892b0;text-align:center;padding:20px">لا توجد مفاتيح</p>';return;}
+list.innerHTML=<table><thead><tr><th>المفتاح</th><th>العميل</th><th>الخطة</th><th>ينتهي</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+${licenses.map(l=>{
+const daysLeft=Math.ceil((new Date(l.expiresAt)-new Date())/86400000);
+return <tr>
+<td><code style="font-size:10px;color:#3b82f6">${l.key}</code></td>
+<td>${l.customerName}</td>
+<td>${l.planName}</td>
+<td>${daysLeft} يوم</td>
+<td><span class="status ${l.status}">${l.status}</span></td>
+<td>
+<button class="action-btn btn-copy" onclick="copyText('${l.key}')">📋</button>
+<button class="action-btn btn-extend" onclick="extend('${l.key}')">+30</button>
+<button class="action-btn btn-ban" onclick="ban('${l.key}')">🚫</button>
+</td>
+</tr>;
+}).join('')}
+</tbody></table>;
+}
+
+async function generateKey(){
+const plan=document.getElementById('genPlan').value;
+const res=await fetch('/api/admin/activate',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({adminKey,customPlan:plan,orderId:null})
+});
+const data=await res.json();
+if(data.success){
+document.getElementById('newKey').textContent=data.key;
+document.getElementById('newPlan').textContent=data.planName;
+document.getElementById('newExpiry').textContent=new Date(data.expiresAt).toLocaleDateString('ar-EG');
+document.getElementById('keyBox').style.display='block';
+loadAll();
+}else{
+alert('خطأ: '+data.error);
+}
+}
+
+async function activateOrder(orderId){
+const res=await fetch('/api/admin/activate',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({orderId,adminKey})
+});
+const data=await res.json();
+if(data.success){
+alert('✅ تم التفعيل\\n\\nالمفتاح: '+data.key);
+loadAll();
+}else{
+alert('خطأ: '+data.error);
+}
+}
+
+async function ban(key){
+if(!confirm('حظر هذا المفتاح؟'))return;
+await fetch('/api/admin/ban',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({key,adminKey,action:'ban'})
+});
+loadAll();
+}
+
+async function extend(key){
+await fetch('/api/admin/extend',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({key,adminKey,days:30})
+});
+loadAll();
+}
+
+function copyKey(){
+navigator.clipboard.writeText(document.getElementById('newKey').textContent);
+showAlert('✅ تم النسخ');
+}
+[9/12/2026 10:30 PM] mustafa: function copyText(txt){
+navigator.clipboard.writeText(txt);
+showAlert('✅ تم النسخ');
+}
+
+if(adminKey){
+document.getElementById('adminKey').value=adminKey;
+login();
+}
+</script>
+</body>
+</html>
