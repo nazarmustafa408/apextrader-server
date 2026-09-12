@@ -148,8 +148,7 @@ function selectPlan(id){
 selectedPlan=id;
 document.querySelectorAll('.plan').forEach(p=>p.classList.remove('selected'));
 document.querySelector(.plan[data-plan="${id}"]).classList.add('selected');
-}
-[9/12/2026 10:21 PM] mustafa: document.getElementById('payBtn').addEventListener('click',async()=>{
+ document.getElementById('payBtn').addEventListener('click',async()=>{
 if(!selectedPlan)return alert('الرجاء اختيار خطة');
 const name=document.getElementById('name').value.trim();
 const email=document.getElementById('email').value.trim();
