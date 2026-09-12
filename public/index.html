@@ -1,0 +1,129 @@
+ <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApexTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#060810;padding:15px;color:#e8edf7;min-height:100vh}
+.wrap{max-width:600px;margin:0 auto;background:#0a0e1a;border-radius:20px;padding:18px;border:1px solid #1a2138;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.topbar{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#141a2e,#1a2138);padding:14px 16px;border-radius:14px;margin-bottom:14px;border:1px solid #232b45}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
+.brand h1{font-size:15px;color:#fff;font-weight:900}
+.brand p{font-size:10px;color:#8892b0}
+.icon-btn{width:38px;height:38px;background:#1a2138;border:1px solid #232b45;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;position:relative}
+.badge{position:absolute;top:-4px;left:-4px;background:#ef4444;color:#fff;font-size:9px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800}
+.statusbar{display:flex;justify-content:space-between;background:#141a2e;padding:12px 16px;border-radius:12px;margin-bottom:14px;border:1px solid #232b45;gap:10px;font-size:12px}
+.status-item{display:flex;align-items:center;gap:6px}
+.status-item .lbl{color:#8892b0}
+.status-item .val{color:#fff;font-weight:800}
+.status-item .val.green{color:#10b981}
+.dot-live{width:8px;height:8px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.card{background:#141a2e;border:1px solid #232b45;border-radius:14px;padding:14px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;right:0;width:100%;height:3px;background:var(--c)}
+.card .ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,255,255,.05);color:var(--c);margin-bottom:8px}
+.card .lbl{font-size:10px;color:#8892b0;margin-bottom:3px}
+.card .val{font-size:20px;font-weight:900;color:var(--c)}
+.card .sub{font-size:9px;color:#8892b0;margin-top:2px}
+.sec{font-size:13px;font-weight:800;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px;margin-top:14px}
+.sec::before{content:'';width:3px;height:16px;background:linear-gradient(180deg,#3b82f6,#8b5cf6);border-radius:10px}
+.chart-box{background:#141a2e;border:1px solid #232b45;border-radius:14px;padding:16px;margin-bottom:14px}
+.chart-box h3{font-size:12px;color:#fff;font-weight:800;margin-bottom:12px}
+#chart{max-height:180px}
+.trades{background:#141a2e;border:1px solid #232b45;border-radius:14px;overflow:hidden}
+.th{padding:12px 14px;background:#1a2138;border-bottom:1px solid #232b45;font-size:12px;color:#fff;font-weight:800}
+.tr{padding:12px 14px;border-bottom:1px solid #232b45;display:flex;justify-content:space-between;font-size:12px}
+.tr:last-child{border-bottom:none}
+.tr .pair{font-weight:800;color:#fff;margin-bottom:3px;font-size:13px}
+.tr .meta{font-size:10px;color:#8892b0}
+.bm{display:inline-block;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;margin-right:5px}
+.bm.b{background:rgba(16,185,129,.15);color:#10b981}
+.bm.s{background:rgba(239,68,68,.15);color:#ef4444}
+.pos{color:#10b981;font-weight:900;font-size:14px}
+[9/12/2026 10:04 PM] mustafa: .neg{color:#ef4444;font-weight:900;font-size:14px}
+.empty{padding:30px;text-align:center;color:#8892b0;font-size:12px}
+.wm{text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #232b45;color:#8892b0;font-size:10px}
+.wm strong{color:#3b82f6}
+.chat-btn{position:fixed;bottom:20px;left:20px;width:60px;height:60px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;text-decoration:none;box-shadow:0 10px 30px rgba(16,185,129,.5);color:#fff;z-index:999}
+@media(min-width:768px){.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<div class="brand">
+<div class="logo">⚡</div>
+<div>
+<h1>ApexTrader</h1>
+<p>نظام التداول الآلي</p>
+</div>
+</div>
+<div class="icon-btn">🔔<span class="badge" id="notifBadge">0</span></div>
+</div>
+<div class="statusbar">
+<div class="status-item">
+<div class="dot-live"></div>
+<span class="val green" id="statusText">جاري الاتصال...</span>
+</div>
+<div class="status-item"><span class="lbl">حساب:</span><span class="val" id="accountNum">-</span></div>
+</div>
+<div class="stats">
+<div class="card" style="--c:#3b82f6"><div class="ico">💰</div><div class="lbl">الرصيد</div><div class="val" id="balance">$0.00</div><div class="sub" id="freeMargin">Free: -</div></div>
+<div class="card" style="--c:#10b981"><div class="ico">📈</div><div class="lbl">الأسهم</div><div class="val" id="equity">$0.00</div><div class="sub" id="marginLevel">Level: -</div></div>
+<div class="card" style="--c:#8b5cf6"><div class="ico">🎯</div><div class="lbl">الأرباح</div><div class="val" id="profit">$0.00</div><div class="sub" id="openCount">0 صفقة</div></div>
+<div class="card" style="--c:#f59e0b"><div class="ico">💳</div><div class="lbl">الهامش</div><div class="val" id="margin">$0.00</div><div class="sub" id="leverage">-</div></div>
+</div>
+<div class="chart-box">
+<h3>📈 الرصيد والأسهم</h3>
+<canvas id="chart"></canvas>
+</div>
+<div class="sec">📊 الصفقات النشطة</div>
+<div class="trades">
+<div class="th">الصفقات المفتوحة</div>
+<div id="tradesList"><div class="empty">في انتظار بيانات MT4...</div></div>
+</div>
+<div class="wm">© 2025 <strong>ApexTrader</strong></div>
+</div>
+<a href="/chat" class="chat-btn">💬</a>
+<script>
+let chart=null,ws=null;
+let store={account:null,orders:[],equityHistory:[]};
+function initChart(){
+const ctx=document.getElementById('chart').getContext('2d');
+chart=new Chart(ctx,{
+type:'line',
+data:{labels:[],datasets:[
+{label:'Balance',data:[],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',fill:true,tension:0.4,pointRadius:0,borderWidth:2},
+{label:'Equity',data:[],borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.4,pointRadius:0,borderWidth:2}
+]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8892b0'}}},scales:{x:{ticks:{color:'#8892b0'},grid:{color:'#232b45'}},y:{ticks:{color:'#8892b0'},grid:{color:'#232b45'}}}}
+});
+}
+function connectWS(){
+const protocol=location.protocol==='https:'?'wss:':'ws:';
+try{
+ws=new WebSocket(protocol+'//'+location.host);
+ws.onopen=()=>setStatus('متصل');
+ws.onmessage=(e)=>{
+try{
+const msg=JSON.parse(e.data);
+if(msg.type==='account'){store.account=msg.data;updateAccount();}
+if(msg.type==='orders'){store.orders=msg.data;updateTrades();}
+}catch(err){}
+};
+ws.onclose=()=>{setStatus('إعادة اتصال...');setTimeout(connectWS,3000);};
+}catch(e){setTimeout(connectWS,3000);}
+}
+async function fetchData(){
+try{
+const res=await fetch('/api/data');
+const data=await res.json();
+if(data.account){store.account=data.account;updateAccount();}
+if(data.orders){store.orders=data.orders;updateTrades();}
+if(data.equityHistory){store.equityHistory=data.equityHistory;updateChart();}
+checkStatus(data.lastUpdate);
