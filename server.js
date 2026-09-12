@@ -83,10 +83,10 @@ app.post('/api/mt4/orders', (req, res) => {
   const newOrders = req.body.orders || [];
   const prevTickets = new Set(data.orders.map(o => o.ticket));
   const newTickets = new Set(newOrders.map(o => o.ticket));
-  newOrders.forEach(o => { if (!prevTickets.has(o.ticket)) addEvent('trade_open', o.type + ' ' + o.symbol + ' - ' + o.lots + ' lot'); });
+  newOrders.forEach(o => { if (!prevTickets.has(o.ticket)) addEvent('trade_open', o.type + ' ' + o.symbol); });
   data.orders.forEach(o => {
     if (!newTickets.has(o.ticket)) {
-      addEvent('trade_close', o.symbol + ' closed');
+      addEvent('trade_close', o.symbol);
       data.history.unshift(Object.assign({}, o, { closeTime: new Date().toISOString() }));
       if (data.history.length > 100) data.history.pop();
     }
@@ -98,11 +98,11 @@ app.post('/api/mt4/orders', (req, res) => {
 });
 
 app.get('/api/data', (req, res) => { res.json(data); });
-[9/13/2026 12:13 AM] mustafa: app.get('/api/health', (req, res) => {
+
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', uptime: Math.floor(process.uptime()), clients: wss.clients.size, account: data.account ? 'connected' : 'waiting', orders: data.orders.length });
 });
-
-app.get('/api/plans', (req, res) => {
+ app.get('/api/plans', (req, res) => {
   const activePlans = {};
   Object.entries(settings.plans).forEach(([key, plan]) => {
     if (plan.enabled) activePlans[key] = { nameAr: plan.nameAr, days: plan.days, price: plan.price, maxAccounts: plan.maxAccounts };
@@ -112,16 +112,17 @@ app.get('/api/plans', (req, res) => {
 
 app.post('/api/subscribe', (req, res) => {
   const ip = req.ip;
-  if (!checkRateLimit(ip, 5, 60000)) return res.status(429).json({ error: 'Too many requests' });
-  const { plan, email, name, phone } = req.body;
+  if (!checkRateLimit(ip, 5, 60000)) return res.status(429).json({ error: 'Too many' });
+  const plan = req.body.plan;
+  const email = req.body.email;
+  const name = req.body.name;
+  const phone = req.body.phone;
   if (!settings.plans[plan] || !settings.plans[plan].enabled) return res.status(400).json({ error: 'Invalid plan' });
   if (!email  !name  !phone) return res.status(400).json({ error: 'Missing data' });
-
   const orderId = 'ORD-' + crypto.randomBytes(4).toString('hex').toUpperCase();
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = Date.now() + 10 * 60 * 1000;
   const planData = settings.plans[plan];
-
   const order = {
     id: orderId, plan: plan, planName: planData.nameAr, email: email, name: name, phone: phone,
     amount: planData.price, days: planData.days, maxAccounts: planData.maxAccounts,
@@ -135,20 +136,20 @@ app.post('/api/subscribe', (req, res) => {
 
 app.post('/api/payment/request-code/:token', (req, res) => {
   const ip = req.ip;
-  if (!checkRateLimit(ip, 3, 60000)) return res.status(429).json({ error: 'Too many requests' });
+  if (!checkRateLimit(ip, 3, 60000)) return res.status(429).json({ error: 'Too many' });
   const token = req.params.token;
   const info = paymentTokens[token];
   if (!info) return res.status(404).json({ error: 'Invalid link' });
   if (Date.now() > info.expiresAt) { delete paymentTokens[token]; return res.status(410).json({ error: 'Expired' }); }
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   verificationCodes[token] = { code: code, expiresAt: Date.now() + 5 * 60 * 1000, attempts: 0 };
-  console.log('Verification code: ' + code);
+  console.log('Code: ' + code);
   res.json({ success: true, message: 'Code sent', expiresIn: 300 });
 });
 
 app.post('/api/payment/verify/:token', (req, res) => {
   const ip = req.ip;
-  if (!checkRateLimit(ip, 10, 60000)) return res.status(429).json({ error: 'Too many attempts' });
+  if (!checkRateLimit(ip, 10, 60000)) return res.status(429).json({ error: 'Too many' });
   const token = req.params.token;
   const code = req.body.code;
   const tokenInfo = paymentTokens[token];
@@ -156,9 +157,9 @@ app.post('/api/payment/verify/:token', (req, res) => {
   if (Date.now() > tokenInfo.expiresAt) return res.status(410).json({ error: 'Expired' });
   const codeInfo = verificationCodes[token];
   if (!codeInfo) return res.status(400).json({ error: 'Request code first' });
-  if (Date.now() > codeInfo.expiresAt) { delete verificationCodes[token]; return res.status(410).json({ error: 'Code expired' }); }
+  if (Date.now() > codeInfo.expiresAt) { delete verificationCodes[token]; return res.status(410).json({ error: 'Expired' }); }
   codeInfo.attempts++;
-  if (codeInfo.attempts > 5) { delete verificationCodes[token]; delete paymentTokens[token]; return res.status(429).json({ error: 'Too many attempts' }); }
+  if (codeInfo.attempts > 5) { delete verificationCodes[token]; delete paymentTokens[token]; return res.status(429).json({ error: 'Too many' }); }
   if (codeInfo.code !== code) return res.status(400).json({ error: 'Wrong code', attemptsLeft: 5 - codeInfo.attempts });
   delete verificationCodes[token];
   tokenInfo.verified = true;
@@ -172,10 +173,13 @@ app.post('/api/payment/verify/:token', (req, res) => {
     expiresIn: Math.floor((tokenInfo.expiresAt - Date.now()) / 1000)
   });
 });
-[9/13/2026 12:13 AM] mustafa: app.post('/api/chat/start', (req, res) => {
+
+app.post('/api/chat/start', (req, res) => {
   const ip = req.ip;
-  if (!checkRateLimit(ip, 5, 60000)) return res.status(429).json({ error: 'Too many requests' });
-  const { name, email, message } = req.body;
+  if (!checkRateLimit(ip, 5, 60000)) return res.status(429).json({ error: 'Too many' });
+  const name = req.body.name;
+  const email = req.body.email;
+ const message = req.body.message;
   const chatId = 'CHAT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
   chats[chatId] = { id: chatId, user: { name: name, email: email }, messages: [], status: 'open', createdAt: new Date().toISOString(), lastUpdate: new Date().toISOString() };
   if (message) addChatMessage(chatId, 'user', message);
@@ -184,8 +188,9 @@ app.post('/api/payment/verify/:token', (req, res) => {
 
 app.post('/api/chat/send', (req, res) => {
   const ip = req.ip;
-  if (!checkRateLimit(ip, 30, 60000)) return res.status(429).json({ error: 'Too many requests' });
-  const { chatId, message } = req.body;
+  if (!checkRateLimit(ip, 30, 60000)) return res.status(429).json({ error: 'Too many' });
+  const chatId = req.body.chatId;
+  const message = req.body.message;
   if (!chats[chatId]) return res.status(404).json({ error: 'Not found' });
   addChatMessage(chatId, 'user', message);
   res.json({ success: true });
@@ -198,7 +203,9 @@ app.get('/api/chat/:chatId', (req, res) => {
 });
 
 app.post('/api/chat/admin/reply', (req, res) => {
-  const { chatId, message, adminKey } = req.body;
+  const chatId = req.body.chatId;
+  const message = req.body.message;
+  const adminKey = req.body.adminKey;
   if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
   if (!chats[chatId]) return res.status(404).json({ error: 'Not found' });
   addChatMessage(chatId, 'admin', message);
@@ -225,7 +232,9 @@ function addChatMessage(chatId, sender, text) {
 }
 
 app.post('/api/admin/activate', (req, res) => {
-  const { orderId, adminKey, customPlan } = req.body;
+  const orderId = req.body.orderId;
+  const adminKey = req.body.adminKey;
+  const customPlan = req.body.customPlan;
   if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid admin key' });
   const order = payments[orderId];
   const planKey = customPlan || (order ? order.plan : null);
@@ -249,8 +258,9 @@ app.post('/api/admin/activate', (req, res) => {
 });
 
 app.post('/api/license/validate', (req, res) => {
-  const { key, account } = req.body;
-[9/13/2026 12:13 AM] mustafa: if (!key) return res.json({ valid: false, reason: 'No key' });
+  const key = req.body.key;
+  const account = req.body.account;
+ if (!key) return res.json({ valid: false, reason: 'No key' });
   const lic = licenses[key];
   if (!lic) return res.json({ valid: false, reason: 'Invalid key' });
   if (lic.status === 'banned') return res.json({ valid: false, reason: 'Banned' });
@@ -267,7 +277,8 @@ app.get('/api/admin/orders', (req, res) => { res.json(Object.values(payments)); 
 app.get('/api/admin/stats', (req, res) => {
   const all = Object.values(licenses);
   const allOrders = Object.values(payments);
-  const totalRevenue = allOrders.filter(o => o.status === 'paid').reduce((s, o) => s + o.amount, 0);
+  let totalRevenue = 0;
+  allOrders.forEach(o => { if (o.status === 'paid') totalRevenue += o.amount; });
   res.json({
     totalLicenses: all.length,
     activeLicenses: all.filter(l => l.status === 'active').length,
@@ -287,7 +298,12 @@ app.get('/api/admin/settings', (req, res) => {
 });
 
 app.post('/api/admin/settings/update', (req, res) => {
-  const { adminKey, zaincash, mastercard, whatsapp, plans, newAdminKey } = req.body;
+  const adminKey = req.body.adminKey;
+  const zaincash = req.body.zaincash;
+  const mastercard = req.body.mastercard;
+  const whatsapp = req.body.whatsapp;
+  const plans = req.body.plans;
+  const newAdminKey = req.body.newAdminKey;
   if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid admin key' });
   if (zaincash) settings.zaincash = zaincash;
   if (mastercard) settings.mastercard = mastercard;
@@ -298,14 +314,18 @@ app.post('/api/admin/settings/update', (req, res) => {
 });
 
 app.post('/api/admin/ban', (req, res) => {
-  const { key, adminKey, action } = req.body;
+  const key = req.body.key;
+  const adminKey = req.body.adminKey;
+  const action = req.body.action;
   if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
   if (licenses[key]) { licenses[key].status = action === 'unban' ? 'active' : 'banned'; res.json({ success: true }); }
   else res.status(404).json({ error: 'Not found' });
 });
 
 app.post('/api/admin/extend', (req, res) => {
-  const { key, adminKey, days } = req.body;
+  const key = req.body.key;
+  const adminKey = req.body.adminKey;
+  const days = req.body.days;
   if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
   if (licenses[key]) {
     const newDate = new Date(new Date(licenses[key].expiresAt).getTime() + days * 86400000);
@@ -320,13 +340,7 @@ app.get('/subscribe', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/chat', (req, res) => res.sendFile(path.join(__dirname, 'public', 'chat.html')));
 app.get('/admin-chats', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-chats.html')));
-
-const PORT = process.env.PORT || 3000;
+ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
- console.log('====================================');
-  console.log('  ApexTrader Server v3.0');
-  console.log('====================================');
-  console.log('Port: ' + PORT);
-  console.log('Access Key: ' + ACCESS_KEY);
-  console.log('Admin Key: ' + settings.adminKey);
+  console.log('ApexTrader Server v3.0 running on port ' + PORT);
 });
