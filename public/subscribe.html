@@ -1,0 +1,253 @@
+ <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الاشتراك - ApexTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
+body{background:#060810;padding:15px;color:#e8edf7;min-height:100vh}
+.wrap{max-width:600px;margin:0 auto;background:#0a0e1a;border-radius:20px;padding:25px;border:1px solid #1a2138;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+h1{font-size:24px;color:#fff;text-align:center;margin-bottom:8px;font-weight:900}
+.sub{text-align:center;color:#8892b0;font-size:13px;margin-bottom:25px}
+.plans{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:25px}
+.plan{background:#141a2e;border:2px solid #232b45;border-radius:16px;padding:18px;cursor:pointer;transition:.3s;position:relative}
+.plan:hover{transform:translateY(-3px);border-color:#3b82f6}
+.plan.selected{border-color:#10b981;background:rgba(16,185,129,.05)}
+.plan.selected::after{content:'✓';position:absolute;top:12px;left:12px;width:28px;height:28px;background:#10b981;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.plan.popular{border-color:#f59e0b;background:rgba(245,158,11,.05)}
+.plan.popular::before{content:'⭐ الأكثر شعبية';position:absolute;top:-12px;right:15px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:900}
+.plan-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.plan h3{font-size:16px;color:#fff;font-weight:900}
+.plan .price{font-size:24px;font-weight:900;color:#10b981}
+.plan .price small{font-size:11px;color:#8892b0}
+.plan .info-line{font-size:12px;color:#8892b0;margin-top:6px}
+.plan .saving{display:inline-block;padding:3px 8px;background:rgba(16,185,129,.15);color:#10b981;border-radius:8px;font-size:10px;font-weight:800;margin-top:6px}
+.form{background:#141a2e;border:1px solid #232b45;border-radius:14px;padding:18px;margin-bottom:15px}
+.form label{display:block;font-size:12px;color:#8892b0;margin-bottom:6px;font-weight:700}
+.form input{width:100%;padding:12px;background:#0a0e1a;border:1px solid #232b45;border-radius:10px;color:#fff;font-family:inherit;font-size:13px;margin-bottom:12px;box-sizing:border-box}
+.form input:focus{outline:none;border-color:#3b82f6}
+.btn{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#3b82f6);border:none;border-radius:14px;color:#fff;font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 15px 35px rgba(16,185,129,.3);transition:.3s}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.code-input{display:flex;gap:8px;justify-content:center;margin:20px 0}
+.code-input input{width:45px;height:55px;text-align:center;font-size:24px;font-weight:900;background:#0a0e1a;border:2px solid #232b45;border-radius:12px;color:#10b981;font-family:inherit}
+.code-input input:focus{outline:none;border-color:#10b981;box-shadow:0 0 15px rgba(16,185,129,.3)}
+.result{display:none;background:rgba(16,185,129,.1);border:2px solid #10b981;border-radius:14px;padding:20px;margin-top:15px;text-align:center}
+.result h3{color:#10b981;margin-bottom:12px;font-size:16px;font-weight:900}
+.result p{font-size:12px;color:#8892b0;margin-bottom:8px}
+.result code{display:block;background:#0a0e1a;padding:12px;border-radius:8px;color:#10b981;font-size:14px;word-break:break-all;margin:8px 0;font-weight:800;text-align:center;font-family:monospace}
+.info{background:rgba(59,130,246,.1);border:1px solid #3b82f6;border-radius:10px;padding:15px;margin-top:12px;font-size:14px;color:#e8edf7;line-height:2;text-align:right}
+[9/12/2026 10:21 PM] mustafa: .info b{color:#3b82f6}
+.info .num{background:#0a0e1a;padding:8px 14px;border-radius:8px;color:#10b981;font-weight:900;font-family:monospace;display:inline-block;margin:3px 0;user-select:all;font-size:16px;letter-spacing:1px}
+.timer-box{background:rgba(245,158,11,.1);border:1px solid #f59e0b;border-radius:10px;padding:12px;margin:12px 0;text-align:center}
+.timer-box .t{font-size:20px;font-weight:900;color:#f59e0b;font-family:monospace}
+.warning{background:rgba(239,68,68,.1);border:1px solid #ef4444;border-radius:10px;padding:12px;margin-top:12px;font-size:11px;color:#ef4444;text-align:center}
+.back{text-align:center;margin-top:20px;color:#8892b0;font-size:12px}
+.back a{color:#3b82f6;text-decoration:none;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🎫 اشترك في ApexTrader</h1>
+<p class="sub">اختر الخطة المناسبة وابدأ التداول</p>
+
+<div id="step1">
+<div class="plans" id="plans"></div>
+<div class="form">
+<label>الاسم الكامل</label>
+<input type="text" id="name" placeholder="مصطفى علي" />
+<label>البريد الإلكتروني</label>
+<input type="email" id="email" placeholder="mustafa@example.com" />
+<label>رقم الهاتف (واتساب)</label>
+<input type="tel" id="phone" placeholder="+964 770 123 4567" />
+</div>
+<button class="btn" id="payBtn">متابعة للدفع 💳</button>
+</div>
+
+<div id="step2" style="display:none">
+<div style="text-align:center;padding:20px 0">
+<div style="font-size:60px;margin-bottom:15px">🔐</div>
+<h2 style="color:#fff;font-size:18px;margin-bottom:10px">التحقق الأمني</h2>
+<p style="color:#8892b0;font-size:13px;line-height:1.7">
+تم إرسال رمز التحقق إلى واتساب الخاص بك<br>
+<b style="color:#10b981" id="phoneDisplay"></b>
+</p>
+</div>
+<div class="code-input" id="codeInputs">
+<input type="tel" maxlength="1" data-i="0" />
+<input type="tel" maxlength="1" data-i="1" />
+<input type="tel" maxlength="1" data-i="2" />
+<input type="tel" maxlength="1" data-i="3" />
+<input type="tel" maxlength="1" data-i="4" />
+<input type="tel" maxlength="1" data-i="5" />
+</div>
+<button class="btn" id="verifyBtn">✅ تحقق واعرض الأرقام</button>
+<div style="text-align:center;margin-top:15px;color:#8892b0;font-size:12px">
+<span id="attemptsLeft"></span>
+</div>
+<div class="timer-box" id="codeTimer">
+<div>⏰ الرمز صالح لمدة</div>
+<div class="t" id="codeTime">5:00</div>
+</div>
+</div>
+
+<div class="result" id="step3">
+<h3>✅ تم التحقق بنجاح!</h3>
+<p>رقم الطلب:</p>
+<code id="orderId"></code>
+<div class="timer-box">
+<div>⏰ انتهاء صلاحية الصفحة</div>
+<div class="t" id="pageTimer">10:00</div>
+</div>
+<p style="margin-top:15px">يرجى إرسال المبلغ إلى:</p>
+<div class="info">
+📱 <b>زين كاش:</b><br>
+<span class="num" id="zaincash">...</span><br><br>
+💳 <b>ماستر كارد:</b><br>
+<span class="num" id="mastercard">...</span><br><br>
+💰 <b>المبلغ:</b> <span id="amount" style="color:#10b981;font-weight:900;font-size:16px"></span> دينار<br><br>
+📲 <b>بعد التحويل:</b><br>
+أرسل رقم الطلب + صورة الحوالة على واتساب:<br>
+<b id="whatsapp" class="num" style="font-size:13px"></b>
+</div>
+<div class="warning">
+⚠️ <b>تحذير أمني</b><br>
+لا تشارك هذه الأرقام مع أي شخص<br>
+الصفحة ستنتهي خلال <span id="timerSmall">10</span> دقائق
+</div>
+</div>
+
+<div class="back"><a href="/">← العودة للرئيسية</a></div>
+</div>
+
+<script>
+let plans={};
+let selectedPlan=null;
+let currentToken=null;
+let pageTimerInterval=null;
+let codeTimerInterval=null;
+
+async function loadPlans(){
+const res=await fetch('/api/plans');
+plans=await res.json();
+document.getElementById('plans').innerHTML=Object.entries(plans).map(([id,p])=>
+<div class="plan ${p.price>=1000000?'popular':''}" data-plan="${id}" onclick="selectPlan('${id}')">
+<div class="plan-header">
+<h3>${p.nameAr}</h3>
+<div class="price">${p.price.toLocaleString()} <small>د.ع</small></div>
+</div>
+<div class="info-line">${p.days} يوم • ${p.maxAccounts} حساب</div>
+<div class="saving">💰 توفير</div>
+</div>
+).join('');
+}
+
+function selectPlan(id){
+selectedPlan=id;
+document.querySelectorAll('.plan').forEach(p=>p.classList.remove('selected'));
+document.querySelector(.plan[data-plan="${id}"]).classList.add('selected');
+}
+[9/12/2026 10:21 PM] mustafa: document.getElementById('payBtn').addEventListener('click',async()=>{
+if(!selectedPlan)return alert('الرجاء اختيار خطة');
+const name=document.getElementById('name').value.trim();
+const email=document.getElementById('email').value.trim();
+const phone=document.getElementById('phone').value.trim();
+if(!name!email!phone)return alert('الرجاء ملء جميع الحقول');
+const btn=document.getElementById('payBtn');
+btn.disabled=true;
+btn.textContent='⏳ جاري المعالجة...';
+try{
+const res=await fetch('/api/subscribe',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({plan:selectedPlan,name,email,phone})
+});
+const data=await res.json();
+if(!data.success){alert('خطأ: '+(data.error||'غير معروف'));btn.disabled=false;btn.textContent='متابعة للدفع 💳';return;}
+currentToken=data.token;
+document.getElementById('phoneDisplay').textContent=phone;
+document.getElementById('step1').style.display='none';
+document.getElementById('step2').style.display='block';
+await requestCode();
+}catch(e){alert('حدث خطأ');btn.disabled=false;btn.textContent='متابعة للدفع 💳';}
+});
+
+async function requestCode(){
+try{
+const res=await fetch('/api/payment/request-code/'+currentToken,{method:'POST'});
+const data=await res.json();
+if(data.success){
+let seconds=300;
+if(codeTimerInterval)clearInterval(codeTimerInterval);
+codeTimerInterval=setInterval(()=>{
+seconds--;
+const m=Math.floor(seconds/60);
+const s=seconds%60;
+document.getElementById('codeTime').textContent=${m}:${s.toString().padStart(2,'0')};
+if(seconds<=0){clearInterval(codeTimerInterval);document.getElementById('codeTime').textContent='انتهى';}
+},1000);
+}
+}catch(e){}
+}
+
+document.querySelectorAll('.code-input input').forEach(input=>{
+input.addEventListener('input',(e)=>{
+if(e.target.value.length===1){
+const next=document.querySelector(.code-input input[data-i="${parseInt(e.target.dataset.i)+1}"]);
+if(next)next.focus();
+}
+});
+input.addEventListener('keydown',(e)=>{
+if(e.key==='Backspace'&&!e.target.value){
+const prev=document.querySelector(.code-input input[data-i="${parseInt(e.target.dataset.i)-1}"]);
+if(prev)prev.focus();
+}
+});
+});
+
+document.getElementById('verifyBtn').addEventListener('click',async()=>{
+const code=Array.from(document.querySelectorAll('.code-input input')).map(i=>i.value).join('');
+if(code.length!==6)return alert('الرجاء إدخال 6 أرقام');
+const btn=document.getElementById('verifyBtn');
+btn.disabled=true;
+btn.textContent='⏳ جاري التحقق...';
+try{
+const res=await fetch('/api/payment/verify/'+currentToken,{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({code})
+});
+const data=await res.json();
+if(data.success){
+document.getElementById('step2').style.display='none';
+document.getElementById('step3').style.display='block';
+document.getElementById('orderId').textContent=data.orderId;
+document.getElementById('zaincash').textContent=data.zaincash;
+document.getElementById('mastercard').textContent=data.mastercard;
+document.getElementById('whatsapp').textContent=data.whatsapp;
+document.getElementById('amount').textContent=data.amount.toLocaleString();
+let seconds=data.expiresIn||600;
+if(pageTimerInterval)clearInterval(pageTimerInterval);
+pageTimerInterval=setInterval(()=>{
+seconds--;
+const m=Math.floor(seconds/60);
+const s=seconds%60;
+document.getElementById('pageTimer').textContent=${m}:${s.toString().padStart(2,'0')};
+document.getElementById('timerSmall').textContent=m;
+if(seconds<=0){clearInterval(pageTimerInterval);document.getElementById('step3').innerHTML='<h3 style="color:#ef4444">⏰ انتهت الصلاحية</h3><p>لأسباب أمنية، تم إخفاء الأرقام</p><button class="btn" onclick="location.reload()" style="margin-top:15px">🔄 إعادة</button>';}
+},1000);
+window.scrollTo({top:0,behavior:'smooth'});
+}else{
+alert(data.error||'رمز خاطئ');
+if(data.attemptsLeft!==undefined)document.getElementById('attemptsLeft').textContent=المحاولات المتبقية: ${data.attemptsLeft};
+btn.disabled=false;
+btn.textContent='✅ تحقق واعرض الأرقام';
+}
+}catch(e){alert('خطأ في الاتصال');btn.disabled=false;btn.textContent='✅ تحقق واعرض الأرقام';}
+});
+[9/12/2026 10:21 PM] mustafa: loadPlans();
+</script>
+</body>
+</html>
