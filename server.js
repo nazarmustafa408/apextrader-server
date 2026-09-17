@@ -21,7 +21,6 @@ let settings = {
   zaincash: '0781 278 7307',
   mastercard: '7110 591 729',
   whatsapp: '+964 781 278 7307',
-  adminKey: ADMIN_KEY,
   plans: {
     monthly:    { nameAr: 'شهري',       days: 30,    price: 100000,  maxAccounts: 1, enabled: true },
     quarterly:  { nameAr: 'ربع سنوي',   days: 90,    price: 280000,  maxAccounts: 1, enabled: true },
@@ -240,7 +239,7 @@ app.post('/api/chat/admin/reply', function(req, res) {
   const chatId = req.body.chatId;
   const message = req.body.message;
   const adminKey = req.body.adminKey;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
   if (!chats[chatId]) return res.status(404).json({ error: 'Not found' });
   addChatMessage(chatId, 'admin', message);
   broadcast({ type: 'chat_message', chatId: chatId, message: { sender: 'admin', text: message, time: new Date().toISOString() } });
@@ -279,7 +278,7 @@ app.post('/api/admin/activate', function(req, res) {
   const orderId = req.body.orderId;
   const adminKey = req.body.adminKey;
   const customPlan = req.body.customPlan;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid admin key' });
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
   const order = payments[orderId];
   const planKey = customPlan || (order ? order.plan : null);
   if (!planKey || !settings.plans[planKey]) return res.status(400).json({ error: 'Invalid plan' });
@@ -349,32 +348,89 @@ app.get('/api/admin/stats', function(req, res) {
 });
 
 app.get('/api/admin/settings', function(req, res) {
-  const adminKey = req.query.adminKey;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid admin key' });
-  res.json(settings);
+  const adminKey = req.query.adminKey || req.headers['x-admin-key'];
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+  res.json({
+    zaincash: settings.zaincash,
+    mastercard: settings.mastercard,
+    whatsapp: settings.whatsapp,
+    plans: settings.plans
+  });
 });
 
 app.post('/api/admin/settings/update', function(req, res) {
-  const adminKey = req.body.adminKey;
-  const zaincash = req.body.zaincash;
-  const mastercard = req.body.mastercard;
-  const whatsapp = req.body.whatsapp;
-  const plans = req.body.plans;
-  const newAdminKey = req.body.newAdminKey;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid admin key' });
-  if (zaincash) settings.zaincash = zaincash;
-  if (mastercard) settings.mastercard = mastercard;
-  if (whatsapp) settings.whatsapp = whatsapp;
-  if (plans) settings.plans = plans;
-  if (newAdminKey) settings.adminKey = newAdminKey;
+  const adminKey = req.body.adminKey || req.headers['x-admin-key'];
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+  if (req.body.zaincash !== undefined) settings.zaincash = req.body.zaincash;
+  if (req.body.mastercard !== undefined) settings.mastercard = req.body.mastercard;
+  if (req.body.whatsapp !== undefined) settings.whatsapp = req.body.whatsapp;
+  if (req.body.plans !== undefined) settings.plans = req.body.plans;
   res.json({ success: true, message: 'Settings saved' });
+});
+
+app.get('/api/admin/subscribers', function(req, res) {
+  const adminKey = req.headers['x-admin-key'] || req.query.adminKey;
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
+  const subscribers = Object.values(licenses).map(function(l) {
+    const daysLeft = Math.ceil((new Date(l.expiresAt) - new Date()) / 86400000);
+    return {
+      password: l.key,
+      customerName: l.customerName,
+      mtAccount: l.mtAccount || 'غير محدد',
+      daysLeft: daysLeft,
+      planName: l.planName,
+      status: daysLeft > 0 ? 'active' : 'expired',
+      expiresAt: l.expiresAt,
+      customerPhone: l.customerPhone || ''
+    };
+  });
+  res.json({ subscribers: subscribers });
+});
+
+app.post('/api/admin/delete-license', function(req, res) {
+  const adminKey = req.headers['x-admin-key'] || req.body.adminKey;
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
+  const key = req.body.key;
+  if (licenses[key]) {
+    delete licenses[key];
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.post('/api/admin/activate-mobile', function(req, res) {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
+  const customerName = req.body.customerName || 'Admin';
+  const customPassword = req.body.customPassword;
+  const customPlan = req.body.customPlan || 'monthly';
+  const customDays = req.body.customDays || 30;
+  const key = customPassword || ('EXP-' + crypto.randomBytes(4).toString('hex').toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase());
+  const now = new Date();
+  const expires = new Date(now.getTime() + customDays * 86400000);
+  licenses[key] = {
+    key: key,
+    plan: customPlan,
+    planName: settings.plans[customPlan] ? settings.plans[customPlan].nameAr : customPlan,
+    customerName: customerName,
+    customerEmail: '',
+    customerPhone: '',
+    createdAt: now.toISOString(),
+    activatedAt: now.toISOString(),
+    expiresAt: expires.toISOString(),
+    status: 'active',
+    mtAccount: null,
+    maxAccounts: 1
+  };
+  res.json({ success: true, key: key, customerName: customerName, expiresAt: licenses[key].expiresAt });
 });
 
 app.post('/api/admin/ban', function(req, res) {
   const key = req.body.key;
-  const adminKey = req.body.adminKey;
+  const adminKey = req.body.adminKey || req.headers['x-admin-key'];
   const action = req.body.action;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
   if (licenses[key]) {
     licenses[key].status = action === 'unban' ? 'active' : 'banned';
     res.json({ success: true });
@@ -385,9 +441,9 @@ app.post('/api/admin/ban', function(req, res) {
 
 app.post('/api/admin/extend', function(req, res) {
   const key = req.body.key;
-  const adminKey = req.body.adminKey;
+  const adminKey = req.body.adminKey || req.headers['x-admin-key'];
   const days = req.body.days;
-  if (adminKey !== settings.adminKey) return res.status(403).json({ error: 'Invalid' });
+  if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid' });
   if (licenses[key]) {
     const newDate = new Date(new Date(licenses[key].expiresAt).getTime() + days * 86400000);
     licenses[key].expiresAt = newDate.toISOString();
